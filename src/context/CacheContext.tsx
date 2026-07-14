@@ -3,6 +3,11 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { createClient } from "@/utils/supabase/client";
 
+const isSupabaseConfigured = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+);
+
 interface CacheState {
   profile: any | null;
   tasks: any[];
@@ -44,6 +49,9 @@ export function CacheProvider({ children }: { children: ReactNode }) {
 
   // 1. Fetch Profile (Stale-While-Revalidate)
   const fetchProfile = async (uid: string, force = false) => {
+    if (!isSupabaseConfigured) {
+      return cache.profile;
+    }
     // If cached, return immediately, fetch in background
     if (cache.profile && !force) {
       // Async revalidate in background
@@ -52,7 +60,7 @@ export function CacheProvider({ children }: { children: ReactNode }) {
         .select("*")
         .eq("id", uid)
         .single()
-        .then(({ data }) => {
+        .then(({ data }: any) => {
           if (data) setCache(prev => ({ ...prev, profile: data }));
         });
       return cache.profile;
@@ -101,6 +109,9 @@ export function CacheProvider({ children }: { children: ReactNode }) {
 
   // 2. Fetch Tasks (SWR)
   const fetchTasks = async (uid: string, groupIds: string[], force = false) => {
+    if (!isSupabaseConfigured) {
+      return cache.tasks;
+    }
     const runQuery = async () => {
       let query = supabase
         .from("tasks")
@@ -127,6 +138,9 @@ export function CacheProvider({ children }: { children: ReactNode }) {
 
   // 3. Fetch Groups Directory (SWR)
   const fetchGroups = async (uid: string, force = false) => {
+    if (!isSupabaseConfigured) {
+      return { groups: cache.groups, joined: cache.joinedGroups };
+    }
     const runQuery = async () => {
       // Fetch collaboratives
       const { data: collabData } = await supabase
@@ -156,7 +170,7 @@ export function CacheProvider({ children }: { children: ReactNode }) {
         member_count: countsMap[g.id] || 0,
       })) || [];
 
-      const joinedGroupsList = processedGroups.filter(g => joinedSet.has(g.id));
+      const joinedGroupsList = processedGroups.filter((g: any) => joinedSet.has(g.id));
 
       setCache(prev => ({
         ...prev,
@@ -177,6 +191,9 @@ export function CacheProvider({ children }: { children: ReactNode }) {
 
   // 4. Fetch Resources (SWR)
   const fetchResources = async (groupIds: string[], force = false) => {
+    if (!isSupabaseConfigured) {
+      return cache.resources;
+    }
     const runQuery = async () => {
       let query = supabase
         .from("resources")
@@ -203,6 +220,9 @@ export function CacheProvider({ children }: { children: ReactNode }) {
 
   // 5. Fetch Forum Posts (SWR per Group)
   const fetchPosts = async (groupId: string, force = false) => {
+    if (!isSupabaseConfigured) {
+      return cache.posts[groupId] || [];
+    }
     const runQuery = async () => {
       const { data: postsData } = await supabase
         .from("posts")

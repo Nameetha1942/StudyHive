@@ -130,7 +130,7 @@ export default function Tasks({ userId }: TasksProps) {
           .from("profiles")
           .update({ contribution_score: nextScore })
           .eq("id", userId)
-          .then(({ error }) => {
+          .then(({ error }: any) => {
             if (error) console.warn("Failed to sync completed task score:", error.message);
           });
       }

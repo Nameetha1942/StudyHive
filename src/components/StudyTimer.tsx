@@ -92,7 +92,7 @@ export default function StudyTimer({ userId, username }: StudyTimerProps) {
         
         setOnlineBuddies(buddies);
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status: any) => {
         if (status === "SUBSCRIBED") {
           await presenceChannel.track({
             username: username,
